@@ -1,0 +1,95 @@
+// Prisma schema for Max Bey - Güvenilir Siteler
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         String   @default("ADMIN")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   // Turkish name, e.g., "Spor Bahisleri"
+  slug        String   @unique
+  description String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  sites Site[]
+
+  @@map("categories")
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   // Turkish name, e.g., "hızlı ödeme"
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sites SiteTag[]
+
+  @@map("tags")
+}
+
+model Site {
+  id                String   @id @default(cuid())
+  name              String   // Turkish friendly name
+  slug              String   @unique
+  url               String
+  logoUrl           String   @default("")
+  rating            Float    @default(0) // 0-10 scale
+  shortDescription  String   @default("") // Turkish
+  longDescription   String   @default("") @db.Text // Turkish
+  welcomeBonusText  String   @default("") // Turkish, e.g., "Hoş geldin bonusu %100, 5000₺'ye kadar"
+  minDeposit        Int      @default(0) // in Turkish Lira
+  isRecommended     Boolean  @default(false)
+  isActive          Boolean  @default(true)
+  categoryId        String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  category Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  tags     SiteTag[]
+  reviews  SiteReview?
+
+  @@map("sites")
+}
+
+model SiteTag {
+  siteId String
+  tagId  String
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([siteId, tagId])
+  @@map("site_tags")
+}
+
+model SiteReview {
+  id        String   @id @default(cuid())
+  siteId    String   @unique
+  pros      String   @default("") @db.Text // Turkish, e.g., "Hızlı ödeme, güçlü mobil uygulama"
+  cons      String   @default("") @db.Text // Turkish, e.g., "Bonus çevrim şartları yüksek"
+  summary   String   @default("") @db.Text // Turkish short summary
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@map("site_reviews")
+}
